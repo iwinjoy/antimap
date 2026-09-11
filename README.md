@@ -104,7 +104,7 @@ flowchart TD
 
 ### Project Demo
 # Video
-[Add your demo video link here]
+
 *Explain what the video demonstrates*
 
 # Additional Demos
