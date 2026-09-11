@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AntiMaps — World's Most Accurate Map. Confidently useless navigation.">
+  <title>AntiMaps — World's Most Accurate Map</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <!-- Floating Clouds & Birds Overlay -->
+  <div class="map-decorations">
+    <div class="cloud" style="top:10%; animation-delay:0s;">☁️</div>
+    <div class="cloud" style="top:25%; animation-delay:18s;">☁️</div>
+    <div class="cloud" style="top:5%; animation-delay:32s;">☁️</div>
+    <div class="bird" style="top:15%; animation-delay:5s;">🦅</div>
+    <div class="bird" style="top:40%; animation-delay:20s;">🦅</div>
+  </div>
+
+  <!-- Permanent Top Uselessness Bar -->
+  <div class="useless-bar" aria-label="Uselessness Meter">
+    <span>🧪 USELESSNESS LEVEL:</span>
+    <div class="useless-meter-fill">
+      <div class="useless-meter-bar"></div>
+    </div>
+    <span class="mode-badge">99.9% USELESS</span>
+    <button type="button" id="btn-voice-mute" class="mute-btn" title="Mute/Unmute Voice">🔊</button>
+  </div>
+
+  <main>
+    <div id="map" aria-label="World map"></div>
+
+    <!-- Main Navigation Card Dashboard -->
+    <section class="search-card" aria-label="AntiMaps Navigation Panel">
+      <div class="brand-row">
+        <div>
+          <h1 class="brand-name">AntiMaps</h1>
+          <p class="sub-heading">World’s Most Accurate Map</p>
+        </div>
+        <button type="button" class="location-button" id="location-button" title="Use live GPS location">📍 Locate me</button>
+      </div>
+
+      <!-- Mode Switcher: Current Location vs Custom Origin -->
+      <div class="mode-switch" role="group">
+        <button type="button" class="mode-option active" id="btn-mode-live">📍 Current Location</button>
+        <button type="button" class="mode-option" id="btn-mode-custom">◆ Custom Origin</button>
+      </div>
+
+      <form id="search-form">
+        <!-- Custom Origin Input (Hidden by default until Custom Origin is clicked) -->
+        <div class="field-wrap" id="origin-wrap" style="display:none;">
+          <label for="origin">STARTING LOCATION</label>
+          <input type="search" id="origin" autocomplete="off" placeholder="Type city, address, or landmark..." disabled>
+        </div>
+        
+        <div class="field-wrap">
+          <label for="target">DESTINATION</label>
+          <input type="search" id="target" autocomplete="off" placeholder="To: Home, Paris, Tokyo...">
+        </div>
+
+        <!-- Dynamic Recent Searches Section -->
+        <div class="recent-searches">
+          <span class="recent-searches-title">Recent Searches</span>
+          <div id="recent-chips" class="recent-chips">
+            <span class="empty-history">Your navigation history is empty. Start getting lost.</span>
+          </div>
+        </div>
+
+        <!-- Transport Mode Selector -->
+        <div class="field-wrap">
+          <label>TRANSPORT MODE</label>
+          <div class="transport-grid">
+            <div class="transport-card active" data-vehicle="car">
+              <span class="transport-icon">🚗</span>
+              <span class="transport-name">Car</span>
+            </div>
+            <div class="transport-card" data-vehicle="bicycle">
+              <span class="transport-icon">🚲</span>
+              <span class="transport-name">Bicycle</span>
+            </div>
+            <div class="transport-card" data-vehicle="walking">
+              <span class="transport-icon">🚶</span>
+              <span class="transport-name">Walking</span>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btn-calculate">
+          <span>⚡ CALCULATE ROUTE</span>
+        </button>
+
+        <button type="button" class="btn-primary btn-nav-start" id="btn-start-nav">
+          <span id="nav-btn-icon">▶</span>
+          <span id="nav-btn-text">START NAVIGATION</span>
+        </button>
+      </form>
+
+      <!-- Live GPS Information Display -->
+      <div id="gps-info-box" class="gps-info-box" style="display:none;">
+        <div class="gps-title">
+          <span class="pulse-dot"></span> LIVE GPS TRACKING ACTIVE
+        </div>
+        <div class="gps-grid">
+          <div><span>LATITUDE</span><strong id="gps-lat">—</strong></div>
+          <div><span>LONGITUDE</span><strong id="gps-lng">—</strong></div>
+          <div><span>GPS ACCURACY</span><strong id="gps-acc">—</strong></div>
+          <div><span>CURRENT SPEED</span><strong id="gps-speed">0 km/h</strong></div>
+        </div>
+      </div>
+
+      <!-- Stats Box -->
+      <div id="stats-box" class="stats-box" style="display:none;">
+        <div class="stat-row">
+          <div class="stat-item">
+            <span>STRAIGHT DISTANCE</span>
+            <strong id="dist-val">—</strong>
+          </div>
+          <div class="stat-item">
+            <span>TURNS TAKEN</span>
+            <strong style="color:#10b981;">0 (Perfect)</strong>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-item">
+            <span>ACCURACY</span>
+            <strong id="funny-acc-val">99.9999%</strong>
+            <span id="funny-acc-sub">Probably.</span>
+          </div>
+          <div class="stat-item">
+            <span>USELESSNESS</span>
+            <strong style="color:#ef4444;">99.9%</strong>
+          </div>
+        </div>
+
+        <!-- Funny Rotating Status Message Ticker -->
+        <div id="funny-ticker" class="funny-ticker">"Straight is the new smart."</div>
+      </div>
+
+      <p id="message" class="message" role="status"></p>
+    </section>
+  </main>
+
+  <!-- GPS THINKING BANNER -->
+  <div id="gps-thinking-banner" class="gps-searching-banner" style="display:none;">
+    <span class="search-pin-icon">📍</span>
+    <span id="gps-thinking-text">Finding you...</span>
+  </div>
+
+  <!-- FUNNY CALCULATION LOADING MODAL -->
+  <div class="modal-overlay" id="modal-calc">
+    <div class="modal-box">
+      <h2 style="margin:0 0 8px; font-size:20px; font-family:'Outfit',sans-serif; color:var(--ink);">⚡ Computing Route...</h2>
+      <p style="font-size:12px; color:var(--muted); margin:0;">Running High-Precision AntiMaps Linear Engine</p>
+      
+      <div class="calc-steps">
+        <div class="calc-step active" id="step-1"><span class="spinner"></span> Calculating route...</div>
+        <div class="calc-step" id="step-2">📡 Consulting the satellites...</div>
+        <div class="calc-step" id="step-3">🙏 Consulting the GPS gods...</div>
+        <div class="calc-step" id="step-4">🛣️ Analyzing every possible route...</div>
+        <div class="calc-step" id="step-5">⏳ This is taking longer than expected...</div>
+      </div>
+
+      <div id="calc-result" style="display:none; text-align:center; padding:16px; background:#ecfdf5; border-radius:16px; border:2px solid #10b981;">
+        <h3 style="margin:0; font-size:18px; color:#047857;">🎯 FOUND THE SOLUTION:</h3>
+        <p style="font-size:28px; font-weight:900; color:#065f46; margin:6px 0;">GO STRAIGHT.</p>
+        <button type="button" class="btn-primary" id="btn-close-calc" style="margin-top:10px;">START JOURNEY 🚗</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POST-TRIP ARRIVAL REPORT MODAL -->
+  <div class="modal-overlay" id="modal-report">
+    <div class="modal-box" style="text-align:center;">
+      <h2 style="margin:0 0 8px; font-family:'Fredoka',sans-serif; font-size:28px; color:#10b981;">🎉 DESTINATION REACHED!</h2>
+      <p style="font-size:14px; font-weight:800; color:var(--ink); margin-bottom:4px;">Against all odds, you went straight.</p>
+      <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">AntiMaps has successfully done its job.</p>
+
+      <div style="margin:16px 0; padding:16px; background:#f8fafc; border-radius:16px; border:1px solid #e2e8f0; text-align:left;">
+        <h4 style="margin:0 0 10px; font-family:'DM Mono',monospace; color:var(--brand-red);">📊 ANTIMAPS JOURNEY REPORT</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+          <div>Distance Travelled: <strong id="rep-dist">0 km</strong></div>
+          <div>Turns Taken: <strong style="color:#10b981;">0</strong></div>
+          <div>Roads Ignored: <strong>All of them</strong></div>
+          <div>Navigation Confidence: <strong style="color:#10b981;">100%</strong></div>
+        </div>
+        <div style="margin-top:12px; padding:10px; background:#fff1f2; border-radius:10px; text-align:center;">
+          <span style="font-size:11px; font-weight:700; color:#9f1239;">⭐ USELESSNESS RATING</span>
+          <strong style="display:block; font-size:20px; color:#be123c;">100% PERFECTLY USELESS</strong>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" id="btn-close-report">CLOSE REPORT</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    // ==========================================
+    // OVERLY CONFIDENT SINGLE VOICE SYSTEM
+    // ==========================================
+    const FunnyVoice = {
+      isMuted: false,
+      speak(text) {
+        if (this.isMuted || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.rate = 1.0;
+        msg.pitch = 1.0;
+        window.speechSynthesis.speak(msg);
+      }
+    };
+
+    // ==========================================
+    // STATE & GEOLOCATION LOGIC
+    // ==========================================
+    let map, originCoords, destinationCoords, straightLine, destinationMarker, vehicleMarker, obstacleMarker;
+    let customOriginCoords = null;
+    let customOriginName = '';
+    let navSimInterval = null;
+    let watchId = null;
+    let isNavigating = false;
+    let startMode = 'live'; // 'live' or 'custom'
+    let currentDistanceMetres = 0;
+    let selectedVehicle = 'car';
+    let lastSpokenTime = 0;
+    let lastEventTime = 0;
+
+    const vehicleIcons = {
+      car: '🚗',
+      bicycle: '🚲',
+      walking: '🚶'
+    };
+
+    const funnyTickerMessages = [
+      '"Straight is the new smart."',
+      '"Turning is overrated."',
+      '"Why use roads?"',
+      '"Your route has zero personality."',
+      '"Complex routing is for amateurs."',
+      '"Congratulations. You found the shortest line."',
+      '"Maximum confidence. Minimum usefulness."',
+      '"Navigation has never been this unnecessary."'
+    ];
+
+    const accuracyPhrases = [
+      'Probably.',
+      'Accuracy: suspiciously high',
+      'Accuracy: scientifically questionable',
+      'Accuracy: trust us',
+      'Accuracy: 100% confident'
+    ];
+
+    const defaultOrigin = [28.6139, 77.2090]; // New Delhi fallback
+
+    function setMessage(text) {
+      document.getElementById('message').textContent = text;
+    }
+
+    // Initialize Map
+    function initMap() {
+      map = L.map('map', { zoomControl: false, minZoom: 2 });
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      map.setView([20, 0], 2);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors | <b>AntiMaps</b>'
+      }).addTo(map);
+
+      addRecenterControl();
+      renderRecentSearches();
+      startTickerRotation();
+      requestInitialLocation();
+    }
+
+    // Leaflet Custom Re-center Control Button
+    function addRecenterControl() {
+      const RecenterControl = L.Control.extend({
+        options: { position: 'bottomright' },
+        onAdd: function() {
+          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+          const btn = L.DomUtil.create('a', 'leaflet-recenter-btn', container);
+          btn.innerHTML = '📍';
+          btn.title = 'Re-center on active location';
+          btn.href = '#';
+          L.DomEvent.on(btn, 'click', function(e) {
+            L.DomEvent.preventDefault(e);
+            recenterOnUser();
+          });
+          return container;
+        }
+      });
+      map.addControl(new RecenterControl());
+    }
+
+    function recenterOnUser() {
+      const activeCoords = (startMode === 'custom' && customOriginCoords) ? customOriginCoords : originCoords;
+      if (activeCoords) {
+        map.flyTo(activeCoords, isNavigating ? 16 : 14, { animate: true, duration: 1.2 });
+        FunnyVoice.speak('Location acquired. Somehow, we know where you are.');
+      } else {
+        setMessage('Location not yet detected.');
+      }
+    }
+
+    function requestInitialLocation() {
+      showGpsThinkingBanner(true);
+      if (!navigator.geolocation) {
+        showGpsThinkingBanner(false);
+        setLiveOrigin(defaultOrigin, 'Geolocation not supported. Using fallback location.');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          showGpsThinkingBanner(false);
+          setLiveOrigin([pos.coords.latitude, pos.coords.longitude], 'Live location acquired!');
+          FunnyVoice.speak('Location acquired. Somehow, we know where you are.');
+        },
+        err => {
+          showGpsThinkingBanner(false);
+          let reason = 'GPS error.';
+          if (err.code === 1) reason = 'Location permission denied. Click 📍 to retry.';
+          else if (err.code === 2) reason = 'GPS position unavailable. Using default origin.';
+          else if (err.code === 3) reason = 'GPS timed out. Using default origin.';
+          setLiveOrigin(defaultOrigin, reason);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    function showGpsThinkingBanner(show) {
+      const banner = document.getElementById('gps-thinking-banner');
+      const text = document.getElementById('gps-thinking-text');
+      if (!show) {
+        banner.style.display = 'none';
+        return;
+      }
+      banner.style.display = 'flex';
+      text.textContent = 'Finding you...';
+
+      setTimeout(() => { if (banner.style.display !== 'none') text.textContent = 'Checking satellites...'; }, 2000);
+      setTimeout(() => { if (banner.style.display !== 'none') text.textContent = 'Your location appears to be playing hide and seek.'; }, 5000);
+    }
+
+    function setLiveOrigin(coords, msg) {
+      originCoords = coords;
+      if (startMode === 'live') {
+        updateVehicleMarker(coords);
+      }
+      const locBtn = document.getElementById('location-button');
+      locBtn.classList.add('ready');
+      locBtn.textContent = '📍 Location Ready';
+      setMessage(msg);
+    }
+
+    // Mode Switcher (Custom Origin vs Live Location)
+    function setupModeSwitcher() {
+      const liveBtn = document.getElementById('btn-mode-live');
+      const customBtn = document.getElementById('btn-mode-custom');
+      const originWrap = document.getElementById('origin-wrap');
+      const originInput = document.getElementById('origin');
+
+      liveBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        startMode = 'live';
+        liveBtn.classList.add('active');
+        customBtn.classList.remove('active');
+        originWrap.style.display = 'none';
+        originInput.disabled = true;
+        if (originCoords) {
+          updateVehicleMarker(originCoords);
+          setMessage('Current live location selected as starting point.');
+        } else {
+          setMessage('Live location mode active. Finding GPS...');
+          requestInitialLocation();
+        }
+      });
+
+      customBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        startMode = 'custom';
+        customBtn.classList.add('active');
+        liveBtn.classList.remove('active');
+        originWrap.style.display = 'block';
+        originInput.disabled = false;
+        originInput.focus();
+        if (customOriginCoords) {
+          updateVehicleMarker(customOriginCoords);
+        }
+        setMessage('Custom Origin selected. Type your starting location.');
+      });
+    }
+
+    async function findPlace(place) {
+      const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(place)}`;
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (!data.length) return null;
+      return { coords: [Number(data[0].lat), Number(data[0].lon)], name: data[0].display_name };
+    }
+
+    // Recent Searches Storage & Render
+    function getRecentSearches() {
+      try { return JSON.parse(localStorage.getItem('antimaps_recents')) || []; }
+      catch (e) { return []; }
+    }
+
+    function saveRecentSearch(name) {
+      let recents = getRecentSearches().filter(item => item.toLowerCase() !== name.toLowerCase());
+      recents.unshift(name);
+      recents = recents.slice(0, 5);
+      try { localStorage.setItem('antimaps_recents', JSON.stringify(recents)); }
+      catch (e) {}
+      renderRecentSearches();
+    }
+
+    function renderRecentSearches() {
+      const container = document.getElementById('recent-chips');
+      const recents = getRecentSearches();
+      if (!recents.length) {
+        container.innerHTML = '<span class="empty-history">Your navigation history is empty. Start getting lost.</span>';
+        return;
+      }
+      container.innerHTML = recents.map(item => `
+        <button type="button" class="recent-chip" data-search="${item}">📍 ${item}</button>
+      `).join('');
+
+      container.querySelectorAll('.recent-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('target').value = btn.dataset.search;
+          calculateRoute();
+        });
+      });
+    }
+
+    // Calculate Route Loading Flow
+    async function startCalculationFlow(targetName) {
+      const modal = document.getElementById('modal-calc');
+      modal.classList.add('active');
+
+      const steps = [
+        'Calculating route...',
+        'Consulting the satellites...',
+        'Consulting the GPS gods...',
+        'Analyzing every possible route...',
+        'This is taking longer than expected...'
+      ];
+
+      for (let i = 1; i <= 5; i++) {
+        document.querySelectorAll('.calc-step').forEach(s => s.classList.remove('active'));
+        const step = document.getElementById(`step-${i}`);
+        step.classList.add('active');
+        if (i > 1) document.getElementById(`step-${i-1}`).classList.add('done');
+        await new Promise(r => setTimeout(r, 650));
+      }
+
+      document.getElementById('step-5').classList.add('done');
+      document.getElementById('calc-result').style.display = 'block';
+      FunnyVoice.speak('Found the solution: Go straight.');
+    }
+
+    async function calculateRoute() {
+      const targetName = document.getElementById('target').value.trim();
+      const originName = document.getElementById('origin').value.trim();
+
+      if (!targetName) { setMessage('Please enter a destination first!'); return; }
+      if (startMode === 'custom' && !originName) { setMessage('Please enter a starting location!'); return; }
+
+      try {
+        setMessage('Locating start and destination...');
+        let startCoords = originCoords;
+        let startLabel = 'Live Location';
+
+        if (startMode === 'custom') {
+          const foundOrigin = await findPlace(originName);
+          if (!foundOrigin) { setMessage(`Starting location "${originName}" not found. Try another place.`); return; }
+          customOriginCoords = foundOrigin.coords;
+          customOriginName = foundOrigin.name;
+          startCoords = customOriginCoords;
+          startLabel = originName;
+        } else {
+          if (!startCoords) {
+            startCoords = defaultOrigin;
+            originCoords = defaultOrigin;
+          }
+        }
+
+        const foundDest = await findPlace(targetName);
+        if (!foundDest) { setMessage(`Destination "${targetName}" not found. Try another place.`); return; }
+        destinationCoords = foundDest.coords;
+
+        saveRecentSearch(targetName);
+        drawRoute(startCoords, destinationCoords, foundDest.name, startLabel);
+        await startCalculationFlow(targetName);
+      } catch (err) {
+        setMessage('Error searching location. Please check your internet connection.');
+      }
+    }
+
+    function drawRoute(start, end, destDisplayName, startDisplayName) {
+      if (straightLine) map.removeLayer(straightLine);
+      if (destinationMarker) map.removeLayer(destinationMarker);
+      if (obstacleMarker) map.removeLayer(obstacleMarker);
+
+      // Playful destination marker 🎯
+      const destIcon = L.divIcon({
+        className: 'custom-emoji-marker map-playful-label',
+        html: '🎯',
+        iconSize: [32, 32]
+      });
+      destinationMarker = L.marker(end, { icon: destIcon }).addTo(map).bindPopup(`<b>Destination:</b><br>${destDisplayName}`).openPopup();
+
+      // Straight line
+      straightLine = L.polyline([start, end], { color: '#ef4444', weight: 5, dashArray: '10 12', opacity: 0.9 }).addTo(map);
+
+      map.fitBounds(L.latLngBounds([start, end]), { padding: [80, 80] });
+
+      currentDistanceMetres = map.distance(start, end);
+      document.getElementById('dist-val').textContent = `${(currentDistanceMetres / 1000).toFixed(1)} km`;
+      document.getElementById('stats-box').style.display = 'block';
+
+      // Place funny obstacle marker along line midpoint
+      const midLat = start[0] + (end[0] - start[0]) * 0.5;
+      const midLng = start[1] + (end[1] - start[1]) * 0.5;
+      const obstacleIcon = L.divIcon({
+        className: 'custom-emoji-marker map-playful-label',
+        html: '🏢',
+        iconSize: [30, 30]
+      });
+      obstacleMarker = L.marker([midLat, midLng], { icon: obstacleIcon })
+        .addTo(map)
+        .bindTooltip('⚠️ BUILDING DETECTED (Continuing straight)', { direction: 'top' });
+
+      updateVehicleMarker(start);
+      setMessage(`Straight-line route ready from ${startDisplayName || 'start'}! Click "Start Navigation".`);
+    }
+
+    function updateVehicleMarker(coords) {
+      if (vehicleMarker) map.removeLayer(vehicleMarker);
+      const iconText = vehicleIcons[selectedVehicle] || '🚗';
+      const customIcon = L.divIcon({
+        className: 'custom-emoji-marker map-playful-label',
+        html: iconText,
+        iconSize: [32, 32]
+      });
+      vehicleMarker = L.marker(coords, { icon: customIcon }).addTo(map);
+    }
+
+    // ==========================================
+    // NAVIGATION (CUSTOM ORIGIN SIMULATION OR LIVE GPS)
+    // ==========================================
+    function toggleLiveNavigation() {
+      if (isNavigating) stopLiveNavigation();
+      else startLiveNavigation();
+    }
+
+    function startLiveNavigation() {
+      const activeStart = (startMode === 'custom') ? customOriginCoords : originCoords;
+      if (!destinationCoords || !straightLine || !activeStart) {
+        setMessage('Please calculate a route first before starting navigation!');
+        return;
+      }
+
+      isNavigating = true;
+      const navBtn = document.getElementById('btn-start-nav');
+      navBtn.classList.add('active-nav');
+      document.getElementById('nav-btn-text').textContent = 'STOP NAVIGATION';
+      document.getElementById('gps-info-box').style.display = 'block';
+
+      FunnyVoice.speak('Welcome to AntiMaps. Please prepare yourself for absolutely unnecessary navigation.');
+
+      if (startMode === 'custom') {
+        // CUSTOM ORIGIN MODE: Navigate along the route from custom origin to destination!
+        startCustomOriginNavigation(activeStart, destinationCoords);
+      } else {
+        // LIVE GPS MODE: Watch real device location
+        if (!navigator.geolocation) {
+          setMessage('Geolocation is not supported by your browser. Using simulated route.');
+          startCustomOriginNavigation(activeStart, destinationCoords);
+          return;
+        }
+
+        watchId = navigator.geolocation.watchPosition(
+          onLocationUpdate,
+          onLocationError,
+          { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 }
+        );
+      }
+    }
+
+    function startCustomOriginNavigation(startPoint, endPoint) {
+      let currentPos = [...startPoint];
+      const speedKmh = selectedVehicle === 'walking' ? 5 : selectedVehicle === 'bicycle' ? 18 : 60;
+      document.getElementById('gps-speed').textContent = `${speedKmh} km/h`;
+      document.getElementById('gps-acc').textContent = '±1m (Simulated)';
+
+      const totalDist = map.distance(startPoint, endPoint);
+      const totalSteps = 120; // 120 ticks
+      let stepCount = 0;
+
+      navSimInterval = setInterval(() => {
+        stepCount++;
+        const progress = Math.min(1, stepCount / totalSteps);
+        currentPos = [
+          startPoint[0] + (endPoint[0] - startPoint[0]) * progress,
+          startPoint[1] + (endPoint[1] - startPoint[1]) * progress
+        ];
+
+        // Update display coordinates
+        document.getElementById('gps-lat').textContent = currentPos[0].toFixed(5);
+        document.getElementById('gps-lng').textContent = currentPos[1].toFixed(5);
+
+        // Update vehicle position along route
+        if (vehicleMarker) {
+          vehicleMarker.setLatLng(currentPos);
+        }
+
+        // Update straight line
+        if (straightLine) {
+          straightLine.setLatLngs([currentPos, endPoint]);
+        }
+
+        const remainingDist = map.distance(currentPos, endPoint);
+        document.getElementById('dist-val').textContent = `${(remainingDist / 1000).toFixed(1)} km`;
+
+        if (stepCount % 20 === 0) {
+          map.panTo(currentPos, { animate: true, duration: 0.8 });
+        }
+
+        // Check proximity
+        if (progress > 0.85 && !onLocationUpdate.nearWarned) {
+          onLocationUpdate.nearWarned = true;
+          FunnyVoice.speak('We are almost there. Please do not suddenly discover the concept of turning.');
+        }
+
+        if (progress >= 1) {
+          clearInterval(navSimInterval);
+          navSimInterval = null;
+          triggerArrival();
+        }
+      }, 500);
+    }
+
+    function stopLiveNavigation() {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      if (navSimInterval !== null) {
+        clearInterval(navSimInterval);
+        navSimInterval = null;
+      }
+      isNavigating = false;
+      const navBtn = document.getElementById('btn-start-nav');
+      navBtn.classList.remove('active-nav');
+      document.getElementById('nav-btn-text').textContent = 'START NAVIGATION';
+      document.getElementById('gps-info-box').style.display = 'none';
+      FunnyVoice.speak('Navigation stopped.');
+      setMessage('Navigation paused.');
+    }
+
+    function onLocationUpdate(position) {
+      // In custom origin mode, live GPS updates must not overwrite the custom starting origin!
+      if (startMode === 'custom') return;
+
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const accuracy = position.coords.accuracy;
+      const speed = position.coords.speed ? (position.coords.speed * 3.6).toFixed(1) : 0;
+
+      originCoords = [lat, lng];
+
+      // Update Live GPS Display
+      document.getElementById('gps-lat').textContent = lat.toFixed(5);
+      document.getElementById('gps-lng').textContent = lng.toFixed(5);
+      document.getElementById('gps-acc').textContent = `±${Math.round(accuracy)}m`;
+      document.getElementById('gps-speed').textContent = `${speed} km/h`;
+
+      // Update vehicle marker with subtle bounce animation
+      if (vehicleMarker) {
+        vehicleMarker.setLatLng([lat, lng]);
+        const el = vehicleMarker.getElement();
+        if (el) {
+          el.classList.add('gps-bounce');
+          setTimeout(() => el.classList.remove('gps-bounce'), 600);
+        }
+      }
+
+      // Update straight line to destination
+      if (destinationCoords && straightLine) {
+        straightLine.setLatLngs([[lat, lng], destinationCoords]);
+        const distRemaining = map.distance([lat, lng], destinationCoords);
+        document.getElementById('dist-val').textContent = `${(distRemaining / 1000).toFixed(1)} km`;
+
+        // Check if near destination (< 300m warning, < 50m arrival)
+        if (distRemaining < 300 && distRemaining > 50 && !onLocationUpdate.nearWarned) {
+          onLocationUpdate.nearWarned = true;
+          FunnyVoice.speak('We are almost there. Please do not suddenly discover the concept of turning.');
+        }
+
+        if (distRemaining < 50) {
+          triggerArrival();
+          return;
+        }
+      }
+
+      // Camera smooth zoom on start
+      if (onLocationUpdate.firstRun) {
+        onLocationUpdate.firstRun = false;
+        map.flyTo([lat, lng], 16, { animate: true, duration: 1.5 });
+      }
+
+      // Periodic check-in voice
+      const now = Date.now();
+      if (now - lastSpokenTime > 25000) {
+        lastSpokenTime = now;
+        FunnyVoice.speak(speed > 1 ? 'You are moving. Excellent decision.' : 'You have stopped moving. I respect your decision.');
+      }
+    }
+    onLocationUpdate.firstRun = true;
+    onLocationUpdate.nearWarned = false;
+
+    function onLocationError(error) {
+      let errMsg = 'GPS update error.';
+      if (error.code === 1) errMsg = 'GPS permission denied.';
+      else if (error.code === 2) errMsg = 'GPS signal unavailable.';
+      else if (error.code === 3) errMsg = 'GPS request timed out.';
+      setMessage(`⚠️ ${errMsg}`);
+    }
+
+    function triggerArrival() {
+      stopLiveNavigation();
+      confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
+      FunnyVoice.speak('Congratulations. You have reached your destination by doing absolutely nothing complicated.');
+
+      document.getElementById('rep-dist').textContent = `${(currentDistanceMetres / 1000).toFixed(1)} km`;
+      document.getElementById('modal-report').classList.add('active');
+    }
+
+    // Ticker & Accuracy Rotation
+    function startTickerRotation() {
+      let idx = 0;
+      setInterval(() => {
+        idx = (idx + 1) % funnyTickerMessages.length;
+        document.getElementById('funny-ticker').textContent = funnyTickerMessages[idx];
+        document.getElementById('funny-acc-sub').textContent = accuracyPhrases[idx % accuracyPhrases.length];
+      }, 7000);
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      setupModeSwitcher();
+
+      // Mute Toggle Button
+      document.getElementById('btn-voice-mute').addEventListener('click', () => {
+        FunnyVoice.isMuted = !FunnyVoice.isMuted;
+        const btn = document.getElementById('btn-voice-mute');
+        btn.textContent = FunnyVoice.isMuted ? '🔇' : '🔊';
+        if (!FunnyVoice.isMuted) FunnyVoice.speak('Voice unmuted.');
+      });
+
+      // Transport selector
+      document.querySelectorAll('.transport-card').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.transport-card').forEach(c => c.classList.remove('active'));
+          card.classList.add('active');
+          selectedVehicle = card.dataset.vehicle;
+          if (originCoords) updateVehicleMarker(originCoords);
+        });
+      });
+
+      // Form submission (Calculate Route)
+      document.getElementById('search-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        calculateRoute();
+      });
+
+      document.getElementById('location-button').addEventListener('click', requestInitialLocation);
+      document.getElementById('btn-start-nav').addEventListener('click', toggleLiveNavigation);
+
+      document.getElementById('btn-close-calc').addEventListener('click', () => {
+        document.getElementById('modal-calc').classList.remove('active');
+      });
+      document.getElementById('btn-close-report').addEventListener('click', () => {
+        document.getElementById('modal-report').classList.remove('active');
+      });
+    });
+  </script>
+</body>
+</html>

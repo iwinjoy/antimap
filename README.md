@@ -104,8 +104,9 @@ flowchart TD
 
 ### Project Demo
 # Video
+[AntiMaps Full Demo Video](<AntiMaps — Worlds Most Accurate Map - Brave 2026-09-12 03-20-51 (1).mp4>)
 
-*Explain what the video demonstrates*
+*This video demonstrates AntiMaps in action: searching destinations, testing custom origins vs live GPS, drawing the uncompromising straight line, obstacle detection, voice narration, and reaching the destination with full journey report statistics.*
 
 # Additional Demos
 - **Desktop Application**: Electron-based portable binary (`ANTIMAP.exe`) for Windows desktop environments.

@@ -1,0 +1,29 @@
+{
+  "name": "antimap",
+  "version": "1.0.0",
+  "description": "Most accurate map in the world, allegedly.",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "make": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "latest",
+    "electron-builder": "latest"
+  },
+  "build": {
+    "appId": "com.antimap.desktop",
+    "productName": "ANTIMAP",
+    "files": [
+      "index.html",
+      "style.css",
+      "main.cjs"
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "portable": {
+      "artifactName": "ANTIMAP.exe"
+    }
+  }
+}
