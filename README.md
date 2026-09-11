@@ -29,19 +29,36 @@ Distance-Over-Direction™ — because why help people get somewhere when you ca
 ## Technical Details
 ### Technologies/Components Used
 For Software:
-- [Languages used]
-- [Frameworks used]
-- [Libraries used]
-- [Tools used]
+- **Languages used**: HTML5, CSS3, JavaScript (ES6+)
+- **Frameworks used**: Electron (Desktop Application wrapper & packaging)
+- **Libraries used**: Leaflet.js (Map rendering & routing display), OpenStreetMap / Nominatim API (Geocoding), Canvas-Confetti (Arrival celebration effects), Web Speech API (Voice narration)
+- **Tools used**: Visual Studio Code, electron-builder, pnpm / npm, Git & GitHub
 
 
 ### Implementation
 For Software:
 # Installation
-[commands]
+```bash
+# Clone the repository
+git clone https://github.com/your-username/Useless-map.git
+
+# Navigate into the project folder
+cd Useless-map
+
+# Install dependencies using npm or pnpm
+npm install
+# or
+pnpm install
+```
 
 # Run
-[commands]
+```bash
+# Launch the desktop application via Electron
+npm start
+
+# Or build the Windows portable executable (.exe)
+npm run make
+```
 
 ### Project Documentation
 For Software:
@@ -62,10 +79,28 @@ AntiMaps is a parody navigation system that uses advanced-looking features to pe
 <img width="1600" height="900" alt="WhatsApp Image 2026-09-11 at 11 16 39 PM" src="https://github.com/user-attachments/assets/37e77de2-2ff7-4a98-abdc-e9d3761270ca" />
 
 # Diagrams
-![Workflow](Add your workflow/architecture diagram here)
-*Add caption explaining your workflow*
 
+```mermaid
+flowchart TD
+    A([User Launch AntiMaps]) --> B{Choose Origin Mode}
+    B -->|Live GPS| C[Fetch Geolocation Coordinates]
+    B -->|Custom Origin| D[Type Starting Location & Nominatim Search]
+    C --> E[Set Origin Coordinates]
+    D --> E
+    E --> F[Enter Destination Address]
+    F --> G[Geocode Destination via Nominatim API]
+    G --> H[AntiMaps Linear Engine Calculation]
+    H --> I[Draw Pure Straight Dotted Line on Leaflet Map]
+    I --> J[Place Obstacle Alert: 'Building Detected - Continuing Straight']
+    J --> K{User Action}
+    K -->|Start Navigation| L[Initiate Voice Narration & Tracking/Simulation]
+    L --> M[Update Speed, Coordinates, and Decreasing Distance]
+    M --> N{Distance < 50m?}
+    N -->|No| M
+    N -->|Yes| O[Arrival Celebration: Confetti + Journey Report Modal]
+```
 
+*Figure 1: AntiMaps Architecture & Execution Workflow — Demonstrating how complex geocoding, route simulation, voice synthesis, and straight-line geometry bypass all real-world road networks.*
 
 ### Project Demo
 # Video
@@ -73,12 +108,13 @@ AntiMaps is a parody navigation system that uses advanced-looking features to pe
 *Explain what the video demonstrates*
 
 # Additional Demos
-[Add any extra demo materials/links]
+- **Desktop Application**: Electron-based portable binary (`ANTIMAP.exe`) for Windows desktop environments.
+- **Interactive Audio Feedback**: SpeechSynthesis API-powered overly confident navigation commentary.
+- **Dynamic Uselessness Gauge**: Real-time uselessness calculations operating at 99.9% efficiency.
 
 ## Team Contributions
-- [Name 1]: [Specific contributions]
-- [Name 2]: [Specific contributions]
-- [Name 3]: [Specific contributions]
+- **IWIN JOY**: Core architecture, Electron packaging and configuration, Leaflet map integration, geocoding logic, custom origin route simulation, and responsive UI layout.
+- **ANASWARA GOPINATH**: Design aesthetics, CSS styling, uselessness meter, interactive modal flows (computing step loader & arrival journey report), voice feedback narration, and documentation.
 
 ---
 Made with ❤️ at TinkerHub Useless Projects 
